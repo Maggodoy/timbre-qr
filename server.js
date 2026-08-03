@@ -5,8 +5,10 @@ const admin = require('firebase-admin');
 // 1. Inicializar Firebase con las credenciales reales
 const serviceAccount = require('./serviceAccountKey.json');
 
+const cert = admin.credential ? admin.credential.cert(serviceAccount) : admin.cert(serviceAccount);
+
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
+  credential: cert
 });
 
 const app = express();
@@ -99,7 +101,7 @@ app.get('/', (req, res) => {
   res.send('Servidor del Timbre QR activo 🔔');
 });
 
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-  console.log(`Servidor activo en http://localhost:${PORT}`);
+  console.log(`Servidor activo en el puerto ${PORT}`);
 });
