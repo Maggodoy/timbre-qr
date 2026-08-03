@@ -1,14 +1,14 @@
 const express = require('express');
 const cors = require('cors');
-const admin = require('firebase-admin');
+const { initializeApp, cert } = require('firebase-admin/app');
+const { getMessaging } = require('firebase-admin/messaging');
 
-// 1. Inicializar Firebase con las credenciales reales
+// 1. Cargar las credenciales reales de Firebase
 const serviceAccount = require('./serviceAccountKey.json');
 
-const cert = admin.credential ? admin.credential.cert(serviceAccount) : admin.cert(serviceAccount);
-
-admin.initializeApp({
-  credential: cert
+// 2. Inicializar Firebase Admin SDK de forma limpia
+const firebaseApp = initializeApp({
+  credential: cert(serviceAccount)
 });
 
 const app = express();
@@ -81,7 +81,7 @@ app.post('/api/ring-bell', async (req, res) => {
     };
 
     try {
-      const response = await admin.messaging().sendEachForMulticast(message);
+      const response = await getMessaging().sendEachForMulticast(message);
       console.log(`🔔 Notificación enviada con éxito a ${response.successCount} dispositivos.`);
     } catch (error) {
       console.error('Error enviando notificación via Firebase:', error);
