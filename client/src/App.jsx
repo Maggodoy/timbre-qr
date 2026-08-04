@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Admin from './Admin';
 
+
 export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [clicks, setClicks] = useState(0);
@@ -122,3 +123,57 @@ const styles = {
   },
   alert: { marginTop: '24px', fontSize: '0.9rem', fontWeight: '500' }
 };
+
+
+export default function Admin() {
+  const [phone, setPhone] = useState('');
+  const [status, setStatus] = useState('');
+
+  const handleSavePhone = async (e) => {
+    e.preventDefault();
+    setStatus('Guardando...');
+
+    try {
+      const response = await fetch('https://timbre-qr-35zh.onrender.com/api/admin/phone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al guardar el teléfono');
+      }
+
+      setStatus('✅ ¡Teléfono guardado con éxito!');
+    } catch (err) {
+      setStatus(`❌ Error: ${err.message}`);
+    }
+  };
+
+  return (
+    <div style={{ padding: '20px', maxWidth: '400px', margin: '0 auto' }}>
+      <h2>Panel de Administración ⚙️</h2>
+      
+      <form onSubmit={handleSavePhone} style={{ marginTop: '20px' }}>
+        <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
+          Número de Celular / WhatsApp:
+        </label>
+        <input 
+          type="tel" 
+          placeholder="+54341xxxxxxx" 
+          value={phone} 
+          onChange={(e) => setPhone(e.target.value)}
+          style={{ width: '100%', padding: '10px', marginBottom: '12px', borderRadius: '6px', border: '1px solid #ccc' }}
+          required
+        />
+        <button type="submit" style={{ width: '100%', padding: '12px', backgroundColor: '#10B981', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
+          Guardar Teléfono
+        </button>
+      </form>
+
+      {status && <p style={{ marginTop: '15px', fontSize: '0.9rem' }}>{status}</p>}
+    </div>
+  );
+}

@@ -105,3 +105,19 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Servidor activo en el puerto ${PORT}`);
 });
+
+// Variable en memoria o archivo/BD para guardar el teléfono de contacto
+let adminPhoneNumber = "";
+
+// Endpoint para obtener/guardar el teléfono
+app.post('/api/admin/phone', (req, res) => {
+  const { phone } = req.body;
+  if (!phone) {
+    return res.status(400).json({ error: 'El número de teléfono es requerido' });
+  }
+  
+  adminPhoneNumber = phone;
+  console.log("Número guardado:", adminPhoneNumber);
+  
+  return res.json({ success: true, message: 'Teléfono guardado correctamente', phone: adminPhoneNumber });
+});
