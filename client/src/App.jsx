@@ -2,35 +2,34 @@ import React, { useState } from 'react';
 import Admin from './Admin';
 
 export default function App() {
-  const [showAdmin, setShowAdmin] = useState(
-    window.location.pathname === '/admin' || window.location.search.includes('admin')
-  );
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  return (
-    <div>
-      {/* Botón flotante para cambiar entre vistas rápidamente */}
-      <div style={{ position: 'fixed', top: 10, right: 10, zIndex: 9999 }}>
-        <button 
-          onClick={() => setShowAdmin(!showAdmin)}
-          style={{
-            padding: '6px 12px',
-            fontSize: '12px',
-            borderRadius: '6px',
-            border: '1px solid #ccc',
-            background: '#fff',
-            cursor: 'pointer'
-          }}
-        >
-          {showAdmin ? 'Ver Timbre 🔔' : 'Ir a Configuración ⚙️'}
-        </button>
-      </div>
+  // Al hacer clic 3 veces en el título, te pide una contraseña
+  const [clicks, setClicks] = useState(0);
 
-      {showAdmin ? <Admin /> : <RingBellView />}
-    </div>
-  );
+  const handleTitleClick = () => {
+    const nextClicks = clicks + 1;
+    setClicks(nextClicks);
+
+    if (nextClicks === 3) {
+      const pin = prompt('Ingresá el PIN de administración:');
+      if (pin === '1234') { // <-- Cambiá '1234' por la clave que quieras
+        setIsAdmin(true);
+      } else {
+        alert('PIN incorrecto');
+      }
+      setClicks(0);
+    }
+  };
+
+  if (isAdmin) {
+    return <Admin />;
+  }
+
+  return <RingBellView onTitleClick={handleTitleClick} />;
 }
 
-function RingBellView() {
+function RingBellView({ onTitleClick }) {
   const [status, setStatus] = useState('idle');
   const [message, setMessage] = useState('');
 
@@ -61,7 +60,8 @@ function RingBellView() {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        <h1 style={styles.title}>¡Hola! 👋</h1>
+        {/* Hacemos clic 3 veces seguidas acá para entrar a la config */}
+        <h1 style={styles.title} onClick={onTitleClick}>¡Hola! 👋</h1>
         <p style={styles.subtitle}>Presioná el botón para avisar que estás en la puerta</p>
 
         <button 
@@ -104,7 +104,7 @@ const styles = {
     maxWidth: '400px',
     width: '100%'
   },
-  title: { fontSize: '1.5rem', color: '#1F2937', marginBottom: '8px' },
+  title: { fontSize: '1.5rem', color: '#1F2937', marginBottom: '8px', cursor: 'pointer', userSelect: 'none' },
   subtitle: { color: '#6B7280', fontSize: '0.95rem', marginBottom: '32px' },
   button: {
     width: '100%',
