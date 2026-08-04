@@ -1,55 +1,57 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Admin from './Admin';
 
 export default function App() {
-  // Si la URL termina en /admin, mostramos la pantalla de registro
-  const isAdmin = window.location.pathname === '/admin' || window.location.search.includes('admin');
+  const [showAdmin, setShowAdmin] = useState(
+    window.location.pathname === '/admin' || window.location.search.includes('admin')
+  );
 
-  if (isAdmin) {
-    return <Admin />;
-  }
+  return (
+    <div>
+      {/* Botón flotante para cambiar entre vistas rápidamente */}
+      <div style={{ position: 'fixed', top: 10, right: 10, zIndex: 9999 }}>
+        <button 
+          onClick={() => setShowAdmin(!showAdmin)}
+          style={{
+            padding: '6px 12px',
+            fontSize: '12px',
+            borderRadius: '6px',
+            border: '1px solid #ccc',
+            background: '#fff',
+            cursor: 'pointer'
+          }}
+        >
+          {showAdmin ? 'Ver Timbre 🔔' : 'Ir a Configuración ⚙️'}
+        </button>
+      </div>
 
-  // Por defecto, mostramos el botón de timbre para la visita
-  return <RingBellView />;
+      {showAdmin ? <Admin /> : <RingBellView />}
+    </div>
+  );
 }
 
 function RingBellView() {
-  const [status, setStatus] = React.useState('idle');
-  const [message, setMessage] = React.useState('');
+  const [status, setStatus] = useState('idle');
+  const [message, setMessage] = useState('');
 
-  const ringBell = () => {
+  const ringBell = async () => {
     setStatus('loading');
-    setMessage('Obteniendo ubicación y avisando...');
+    setMessage('Haciendo sonar el timbre...');
 
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          sendRingSignal(position.coords.latitude, position.coords.longitude);
-        },
-        () => sendRingSignal(null, null),
-        { timeout: 5000 }
-      );
-    } else {
-      sendRingSignal(null, null);
-    }
-  };
-
-  const sendRingSignal = async (lat, lng) => {
     try {
-      const response = await fetch('[https://timbre-qr-35zh.onrender.com/api/ring-bell](https://timbre-qr-35zh.onrender.com/api/ring-bell)', {
+      const response = await fetch('https://timbre-qr-35zh.onrender.com/api/ring-bell', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lat, lng })
+        headers: { 'Content-Type': 'application/json' }
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Ocurrió un error al tocar el timbre');
+        throw new Error(data.error || 'Error al tocar el timbre');
       }
 
       setStatus('success');
-      setMessage(data.message);
+      setMessage('🔔 ¡Timbre tocado! Ya le avisamos a la casa.');
     } catch (err) {
       setStatus('error');
       setMessage(err.message);
@@ -63,15 +65,11 @@ function RingBellView() {
         <p style={styles.subtitle}>Presioná el botón para avisar que estás en la puerta</p>
 
         <button 
-          onClick={ringBell} 
-          disabled={status === 'loading' || status === 'success'}
-          style={{
-            ...styles.button,
-            backgroundColor: status === 'success' ? '#10B981' : '#2563EB',
-            opacity: status === 'loading' ? 0.7 : 1
-          }}
+          onClick={ringBell}
+          disabled={status === 'loading'}
+          style={styles.button}
         >
-          {status === 'loading' ? 'Enviando...' : status === 'success' ? '¡Sonando!' : '🔔 Tocar Timbre'}
+          {status === 'loading' ? 'Avisando...' : '🔔 Tocar Timbre'}
         </button>
 
         {message && (
@@ -106,18 +104,18 @@ const styles = {
     maxWidth: '400px',
     width: '100%'
   },
-  title: { fontSize: '1.8rem', color: '#1F2937', marginBottom: '8px' },
-  subtitle: { color: '#6B7280', fontSize: '1rem', marginBottom: '32px' },
+  title: { fontSize: '1.5rem', color: '#1F2937', marginBottom: '8px' },
+  subtitle: { color: '#6B7280', fontSize: '0.95rem', marginBottom: '32px' },
   button: {
     width: '100%',
-    padding: '18px',
-    fontSize: '1.25rem',
+    padding: '16px',
+    fontSize: '1.1rem',
     fontWeight: 'bold',
     color: '#FFF',
+    backgroundColor: '#2563EB',
     border: 'none',
     borderRadius: '12px',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease-in-out'
+    cursor: 'pointer'
   },
-  alert: { marginTop: '24px', fontSize: '0.95rem', fontWeight: '500' }
+  alert: { marginTop: '24px', fontSize: '0.9rem', fontWeight: '500' }
 };
