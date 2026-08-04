@@ -3,7 +3,7 @@ import Admin from './Admin';
 
 export default function App() {
   // Si la URL termina en /admin, mostramos la pantalla de registro
-  const isAdmin = window.location.pathname === '/admin';
+  const isAdmin = window.location.pathname === '/admin' || window.location.search.includes('admin');
 
   if (isAdmin) {
     return <Admin />;
