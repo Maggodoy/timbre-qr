@@ -27,7 +27,7 @@ export default function Admin() {
       }
 
       // 3. Registrar el token en el Backend
-      const response = await fetch('http://localhost:3001/api/register-device', {
+      const response = await fetch('[https://timbre-qr-35zh.onrender.com/api/register-device](https://timbre-qr-35zh.onrender.com/api/register-device)', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fcmToken })

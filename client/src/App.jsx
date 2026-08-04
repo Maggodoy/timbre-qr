@@ -36,7 +36,7 @@ function RingBellView() {
 
   const sendRingSignal = async (lat, lng) => {
     try {
-      const response = await fetch('http://localhost:3001/api/ring-bell', {
+      const response = await fetch('[https://timbre-qr-35zh.onrender.com/api/ring-bell](https://timbre-qr-35zh.onrender.com/api/ring-bell)', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ lat, lng })
