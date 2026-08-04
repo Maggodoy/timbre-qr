@@ -35,13 +35,19 @@ function RingBellView({ onTitleClick }) {
 
   const ringBell = async () => {
     setStatus('loading');
-    setMessage('Haciendo sonar el timbre...');
+    setMessage('Haciendo sonar el timbre (despertando servidor)...');
 
     try {
       const response = await fetch('https://timbre-qr-35zh.onrender.com/api/ring-bell', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
+
+      // Verificar si la respuesta es realmente JSON antes de parsear
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('El servidor está iniciando o devolvió un error inesperado. Intentalo de nuevo en unos segundos.');
+      }
 
       const data = await response.json();
 
@@ -57,6 +63,7 @@ function RingBellView({ onTitleClick }) {
     }
   };
 
+  
   return (
     <div style={styles.container}>
       <div style={styles.card}>
