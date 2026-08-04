@@ -3,17 +3,16 @@ import Admin from './Admin';
 
 export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
-
-  // Al hacer clic 3 veces en el título, te pide una contraseña
   const [clicks, setClicks] = useState(0);
 
+  // Al hacer clic 3 veces en el título, solicita PIN de seguridad
   const handleTitleClick = () => {
     const nextClicks = clicks + 1;
     setClicks(nextClicks);
 
     if (nextClicks === 3) {
       const pin = prompt('Ingresá el PIN de administración:');
-      if (pin === '1234') { // <-- Cambiá '1234' por la clave que quieras
+      if (pin === '1234') { // Podés cambiar '1234' por tu clave preferida
         setIsAdmin(true);
       } else {
         alert('PIN incorrecto');
@@ -35,18 +34,19 @@ function RingBellView({ onTitleClick }) {
 
   const ringBell = async () => {
     setStatus('loading');
-    setMessage('Haciendo sonar el timbre (despertando servidor)...');
+    setMessage('Haciendo sonar el timbre...');
 
     try {
       const response = await fetch('https://timbre-qr-35zh.onrender.com/api/ring-bell', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}) // Enviamos body vacío para evitar fallos en el servidor
       });
 
-      // Verificar si la respuesta es realmente JSON antes de parsear
+      // Validamos que la respuesta sea realmente un JSON
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('El servidor está iniciando o devolvió un error inesperado. Intentalo de nuevo en unos segundos.');
+        throw new Error('El servidor se está iniciando o devolvió una respuesta no válida. Intentalo en unos segundos.');
       }
 
       const data = await response.json();
@@ -63,11 +63,10 @@ function RingBellView({ onTitleClick }) {
     }
   };
 
-  
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        {/* Hacemos clic 3 veces seguidas acá para entrar a la config */}
+        {/* Hacer 3 clics seguidos en el título para abrir el modal del PIN */}
         <h1 style={styles.title} onClick={onTitleClick}>¡Hola! 👋</h1>
         <p style={styles.subtitle}>Presioná el botón para avisar que estás en la puerta</p>
 

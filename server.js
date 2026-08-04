@@ -6,8 +6,8 @@ const { getMessaging } = require('firebase-admin/messaging');
 // 1. Cargar las credenciales reales de Firebase
 const serviceAccount = require('./serviceAccountKey.json');
 
-// 2. Inicializar Firebase Admin SDK de forma limpia
-const firebaseApp = initializeApp({
+// 2. Inicializar Firebase Admin SDK
+initializeApp({
   credential: cert(serviceAccount)
 });
 
@@ -15,12 +15,12 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Guardaremos los celulares registrados y el tiempo del último toque
+// Variables de estado
 let deviceTokens = new Set();
 let lastRingTimestamp = 0;
 
 const COOLDOWN_MS = 60 * 1000; // 1 minuto entre toques
-const HOME_COORDS = { lat: -32.9468, lng: -60.6393 }; // Reemplazar por tus coordenadas
+const HOME_COORDS = { lat: -32.9468, lng: -60.6393 }; // Coordenadas de Rosario
 const MAX_DISTANCE_METERS = 50; 
 
 function getDistanceInMeters(lat1, lon1, lat2, lon2) {
@@ -33,9 +33,9 @@ function getDistanceInMeters(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// RUTA 1: Registrar celulares (Tu celular y el de tu novio)
+// RUTA 1: Registrar celulares
 app.post('/api/register-device', (req, res) => {
-  const { fcmToken } = req.body;
+  const { fcmToken } = req.body || {};
   if (!fcmToken) return res.status(400).json({ error: 'Token de dispositivo requerido' });
 
   deviceTokens.add(fcmToken);
@@ -45,7 +45,7 @@ app.post('/api/register-device', (req, res) => {
 
 // RUTA 2: Tocar el timbre (Visitante)
 app.post('/api/ring-bell', async (req, res) => {
-  const { lat, lng } = req.body;
+  const { lat, lng } = req.body || {}; // fallback || {} evita fallos si req.body es undefined
   const now = Date.now();
 
   // Anti-Spam
@@ -56,7 +56,7 @@ app.post('/api/ring-bell', async (req, res) => {
     });
   }
 
-  // Validación de distancia (opcional)
+  // Validación de distancia (opcional si envías coordenadas)
   if (lat && lng) {
     const distance = getDistanceInMeters(lat, lng, HOME_COORDS.lat, HOME_COORDS.lng);
     if (distance > MAX_DISTANCE_METERS) {
@@ -64,7 +64,7 @@ app.post('/api/ring-bell', async (req, res) => {
     }
   }
 
-  // Enviar notificación PUSH real a través de Firebase Cloud Messaging
+  // Enviar notificación PUSH a través de FCM
   const tokens = Array.from(deviceTokens);
   
   if (tokens.length > 0) {
@@ -84,7 +84,7 @@ app.post('/api/ring-bell', async (req, res) => {
       const response = await getMessaging().sendEachForMulticast(message);
       console.log(`🔔 Notificación enviada con éxito a ${response.successCount} dispositivos.`);
     } catch (error) {
-      console.error('Error enviando notificación via Firebase:', error);
+      console.error('Error enviando notificación vía Firebase:', error);
     }
   } else {
     console.log('🔔 Timbre tocado (sin dispositivos registrados aún).');
