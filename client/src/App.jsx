@@ -40,20 +40,17 @@ function RingBellView({ onTitleClick }) {
       const response = await fetch('https://timbre-qr-35zh.onrender.com/api/ring-bell', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}) // Enviamos body vacío para evitar fallos en el servidor
+        body: JSON.stringify({})
       });
 
-      // Validamos que la respuesta sea realmente un JSON
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('El servidor se está iniciando o devolvió una respuesta no válida. Intentalo en unos segundos.');
-      }
-
-      const data = await response.json();
+      // Leemos la respuesta como texto para capturar cualquier respuesta de Render
+      const textResponse = await response.text();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Error al tocar el timbre');
+        throw new Error(`Error ${response.status}: ${textResponse}`);
       }
+
+      const data = JSON.parse(textResponse);
 
       setStatus('success');
       setMessage('🔔 ¡Timbre tocado! Ya le avisamos a la casa.');
