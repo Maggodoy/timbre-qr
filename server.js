@@ -49,7 +49,7 @@ app.post('/api/ring-bell', async (req, res) => {
   // 3. Envío de notificación por Telegram
   try {
     const mensaje = encodeURIComponent('🔔 ¡Atención! Hay alguien tocando el timbre en la puerta.');
-    const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${mensaje}`;
+    const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${mensaje}&disable_notification=false`;
 
     const response = await fetch(telegramUrl);
     const data = await response.json();
