@@ -1,28 +1,21 @@
 const express = require('express');
 const cors = require('cors');
-const { initializeApp, cert } = require('firebase-admin/app');
-const { getMessaging } = require('firebase-admin/messaging');
-
-// 1. Cargar las credenciales reales de Firebase
-const serviceAccount = require('./serviceAccountKey.json');
-
-// 2. Inicializar Firebase Admin SDK
-initializeApp({
-  credential: cert(serviceAccount)
-});
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Variables de estado
-let deviceTokens = new Set();
-let lastRingTimestamp = 0;
+// Configuraciones del Bot de Telegram (Cargadas desde variables de entorno)
+const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN || 'TU_TOKEN_DE_BOT_AQUI';
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || 'TU_CHAT_ID_CON_SIGNO_MENOS';
 
+// Variables de estado local
+let lastRingTimestamp = 0;
 const COOLDOWN_MS = 60 * 1000; // 1 minuto entre toques
 const HOME_COORDS = { lat: -32.9468, lng: -60.6393 }; // Coordenadas de Rosario
 const MAX_DISTANCE_METERS = 50; 
 
+// Cálculo Haversine para distancia geográfica
 function getDistanceInMeters(lat1, lon1, lat2, lon2) {
   const R = 6371e3;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -33,22 +26,12 @@ function getDistanceInMeters(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// RUTA 1: Registrar celulares
-app.post('/api/register-device', (req, res) => {
-  const { fcmToken } = req.body || {};
-  if (!fcmToken) return res.status(400).json({ error: 'Token de dispositivo requerido' });
-
-  deviceTokens.add(fcmToken);
-  console.log(`📱 Dispositivo registrado con éxito. Total: ${deviceTokens.size}`);
-  return res.json({ success: true, message: 'Dispositivo registrado correctamente' });
-});
-
-// RUTA 2: Tocar el timbre (Visitante)
+// RUTA PRINCIPAL: Tocar el timbre (Visitante)
 app.post('/api/ring-bell', async (req, res) => {
-  const { lat, lng } = req.body || {}; // fallback || {} evita fallos si req.body es undefined
+  const { lat, lng } = req.body || {};
   const now = Date.now();
 
-  // Anti-Spam
+  // 1. Control Anti-Spam
   if (now - lastRingTimestamp < COOLDOWN_MS) {
     const remainingSeconds = Math.ceil((COOLDOWN_MS - (now - lastRingTimestamp)) / 1000);
     return res.status(429).json({ 
@@ -56,7 +39,7 @@ app.post('/api/ring-bell', async (req, res) => {
     });
   }
 
-  // Validación de distancia (opcional si envías coordenadas)
+  // 2. Control opcional por Geolocalización
   if (lat && lng) {
     const distance = getDistanceInMeters(lat, lng, HOME_COORDS.lat, HOME_COORDS.lng);
     if (distance > MAX_DISTANCE_METERS) {
@@ -64,60 +47,40 @@ app.post('/api/ring-bell', async (req, res) => {
     }
   }
 
-  // Enviar notificación PUSH a través de FCM
-  const tokens = Array.from(deviceTokens);
-  
-  if (tokens.length > 0) {
-    const message = {
-      notification: {
-        title: '🔔 ¡Están tocando el timbre!',
-        body: 'Hay alguien en la puerta de entrada.',
-      },
-      android: {
-        priority: 'high',
-        notification: { sound: 'default' }
-      },
-      tokens: tokens
-    };
+  // 3. Envío de alerta instantánea a Telegram
+  try {
+    const mensaje = encodeURIComponent('🔔 ¡Atención! Hay alguien tocando el timbre en la puerta.');
+    const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${mensaje}`;
 
-    try {
-      const response = await getMessaging().sendEachForMulticast(message);
-      console.log(`🔔 Notificación enviada con éxito a ${response.successCount} dispositivos.`);
-    } catch (error) {
-      console.error('Error enviando notificación vía Firebase:', error);
+    const response = await fetch(telegramUrl);
+    const data = await response.json();
+
+    if (!data.ok) {
+      throw new Error(data.description || 'Error al comunicarse con Telegram');
     }
-  } else {
-    console.log('🔔 Timbre tocado (sin dispositivos registrados aún).');
-  }
 
-  lastRingTimestamp = now;
-  return res.json({ 
-    success: true, 
-    message: '¡El timbre está sonando! En breve te atienden.' 
-  });
+    lastRingTimestamp = now;
+    console.log('🔔 Notificación de timbre enviada con éxito a Telegram.');
+
+    return res.json({ 
+      success: true, 
+      message: '¡El timbre está sonando! En breve te atienden.' 
+    });
+
+  } catch (error) {
+    console.error('Error al enviar mensaje por Telegram:', error);
+    return res.status(500).json({ 
+      error: 'Hubo un inconveniente al notificar el timbre. Reintentá en unos momentos.' 
+    });
+  }
 });
 
+// Ruta de diagnóstico del backend
 app.get('/', (req, res) => {
-  res.send('Servidor del Timbre QR activo 🔔');
+  res.send('Servidor del Timbre QR activo y listo para notificar por Telegram 🔔');
 });
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Servidor activo en el puerto ${PORT}`);
-});
-
-// Variable en memoria o archivo/BD para guardar el teléfono de contacto
-let adminPhoneNumber = "";
-
-// Endpoint para obtener/guardar el teléfono
-app.post('/api/admin/phone', (req, res) => {
-  const { phone } = req.body;
-  if (!phone) {
-    return res.status(400).json({ error: 'El número de teléfono es requerido' });
-  }
-  
-  adminPhoneNumber = phone;
-  console.log("Número guardado:", adminPhoneNumber);
-  
-  return res.json({ success: true, message: 'Teléfono guardado correctamente', phone: adminPhoneNumber });
 });

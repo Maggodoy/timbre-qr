@@ -1,19 +1,17 @@
 import React, { useState } from 'react';
 import Admin from './Admin';
 
-
 export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [clicks, setClicks] = useState(0);
 
-  // Al hacer clic 3 veces en el título, solicita PIN de seguridad
   const handleTitleClick = () => {
     const nextClicks = clicks + 1;
     setClicks(nextClicks);
 
     if (nextClicks === 3) {
       const pin = prompt('Ingresá el PIN de administración:');
-      if (pin === '1234') { // Podés cambiar '1234' por tu clave preferida
+      if (pin === '1234') {
         setIsAdmin(true);
       } else {
         alert('PIN incorrecto');
@@ -44,14 +42,11 @@ function RingBellView({ onTitleClick }) {
         body: JSON.stringify({})
       });
 
-      // Leemos la respuesta como texto para capturar cualquier respuesta de Render
-      const textResponse = await response.text();
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${textResponse}`);
+        throw new Error(data.error || 'Error al tocar el timbre');
       }
-
-      const data = JSON.parse(textResponse);
 
       setStatus('success');
       setMessage('🔔 ¡Timbre tocado! Ya le avisamos a la casa.');
@@ -64,7 +59,6 @@ function RingBellView({ onTitleClick }) {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        {/* Hacer 3 clics seguidos en el título para abrir el modal del PIN */}
         <h1 style={styles.title} onClick={onTitleClick}>¡Hola! 👋</h1>
         <p style={styles.subtitle}>Presioná el botón para avisar que estás en la puerta</p>
 
@@ -90,90 +84,10 @@ function RingBellView({ onTitleClick }) {
 }
 
 const styles = {
-  container: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '100vh',
-    backgroundColor: '#F3F4F6',
-    padding: '20px',
-    fontFamily: 'system-ui, -apple-system, sans-serif'
-  },
-  card: {
-    backgroundColor: '#FFFFFF',
-    padding: '40px 24px',
-    borderRadius: '16px',
-    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-    textAlign: 'center',
-    maxWidth: '400px',
-    width: '100%'
-  },
+  container: { display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', backgroundColor: '#F3F4F6', padding: '20px', fontFamily: 'system-ui, -apple-system, sans-serif' },
+  card: { backgroundColor: '#FFFFFF', padding: '40px 24px', borderRadius: '16px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', textAlign: 'center', maxWidth: '400px', width: '100%' },
   title: { fontSize: '1.5rem', color: '#1F2937', marginBottom: '8px', cursor: 'pointer', userSelect: 'none' },
   subtitle: { color: '#6B7280', fontSize: '0.95rem', marginBottom: '32px' },
-  button: {
-    width: '100%',
-    padding: '16px',
-    fontSize: '1.1rem',
-    fontWeight: 'bold',
-    color: '#FFF',
-    backgroundColor: '#2563EB',
-    border: 'none',
-    borderRadius: '12px',
-    cursor: 'pointer'
-  },
+  button: { width: '100%', padding: '16px', fontSize: '1.1rem', fontWeight: 'bold', color: '#FFF', backgroundColor: '#2563EB', border: 'none', borderRadius: '12px', cursor: 'pointer' },
   alert: { marginTop: '24px', fontSize: '0.9rem', fontWeight: '500' }
 };
-
-
-export default function Admin() {
-  const [phone, setPhone] = useState('');
-  const [status, setStatus] = useState('');
-
-  const handleSavePhone = async (e) => {
-    e.preventDefault();
-    setStatus('Guardando...');
-
-    try {
-      const response = await fetch('https://timbre-qr-35zh.onrender.com/api/admin/phone', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Error al guardar el teléfono');
-      }
-
-      setStatus('✅ ¡Teléfono guardado con éxito!');
-    } catch (err) {
-      setStatus(`❌ Error: ${err.message}`);
-    }
-  };
-
-  return (
-    <div style={{ padding: '20px', maxWidth: '400px', margin: '0 auto' }}>
-      <h2>Panel de Administración ⚙️</h2>
-      
-      <form onSubmit={handleSavePhone} style={{ marginTop: '20px' }}>
-        <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-          Número de Celular / WhatsApp:
-        </label>
-        <input 
-          type="tel" 
-          placeholder="+54341xxxxxxx" 
-          value={phone} 
-          onChange={(e) => setPhone(e.target.value)}
-          style={{ width: '100%', padding: '10px', marginBottom: '12px', borderRadius: '6px', border: '1px solid #ccc' }}
-          required
-        />
-        <button type="submit" style={{ width: '100%', padding: '12px', backgroundColor: '#10B981', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
-          Guardar Teléfono
-        </button>
-      </form>
-
-      {status && <p style={{ marginTop: '15px', fontSize: '0.9rem' }}>{status}</p>}
-    </div>
-  );
-}
