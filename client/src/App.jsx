@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import Admin from './Admin';
+import Admin from './components/Admin';
 
 export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
