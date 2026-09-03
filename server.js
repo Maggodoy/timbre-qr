@@ -5,17 +5,16 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Configuraciones del Bot de Telegram (Cargadas desde variables de entorno)
-const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN || 'TU_TOKEN_DE_BOT_AQUI';
-const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || 'TU_CHAT_ID_CON_SIGNO_MENOS';
+// Variables del Bot de Telegram (Tomadas de las variables de entorno de Render)
+const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
-// Variables de estado local
+// Control local de timbre
 let lastRingTimestamp = 0;
-const COOLDOWN_MS = 60 * 1000; // 1 minuto entre toques
-const HOME_COORDS = { lat: -32.9468, lng: -60.6393 }; // Coordenadas de Rosario
+const COOLDOWN_MS = 60 * 1000; // 1 minuto de espera
+const HOME_COORDS = { lat: -32.9468, lng: -60.6393 }; // Rosario
 const MAX_DISTANCE_METERS = 50; 
 
-// Cálculo Haversine para distancia geográfica
 function getDistanceInMeters(lat1, lon1, lat2, lon2) {
   const R = 6371e3;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -26,12 +25,12 @@ function getDistanceInMeters(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// RUTA PRINCIPAL: Tocar el timbre (Visitante)
+// RUTA PRINCIPAL: Tocar el timbre
 app.post('/api/ring-bell', async (req, res) => {
   const { lat, lng } = req.body || {};
   const now = Date.now();
 
-  // 1. Control Anti-Spam
+  // 1. Anti-Spam
   if (now - lastRingTimestamp < COOLDOWN_MS) {
     const remainingSeconds = Math.ceil((COOLDOWN_MS - (now - lastRingTimestamp)) / 1000);
     return res.status(429).json({ 
@@ -47,7 +46,7 @@ app.post('/api/ring-bell', async (req, res) => {
     }
   }
 
-  // 3. Envío de alerta instantánea a Telegram
+  // 3. Envío de notificación por Telegram
   try {
     const mensaje = encodeURIComponent('🔔 ¡Atención! Hay alguien tocando el timbre en la puerta.');
     const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${mensaje}`;
@@ -56,6 +55,7 @@ app.post('/api/ring-bell', async (req, res) => {
     const data = await response.json();
 
     if (!data.ok) {
+      console.error('Respuesta de error de Telegram:', data);
       throw new Error(data.description || 'Error al comunicarse con Telegram');
     }
 
@@ -75,9 +75,8 @@ app.post('/api/ring-bell', async (req, res) => {
   }
 });
 
-// Ruta de diagnóstico del backend
 app.get('/', (req, res) => {
-  res.send('Servidor del Timbre QR activo y listo para notificar por Telegram 🔔');
+  res.send('Servidor del Timbre QR activo 🔔');
 });
 
 const PORT = process.env.PORT || 3001;
